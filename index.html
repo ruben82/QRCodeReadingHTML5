@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset=utf-8>
+
+    <link href="resources/css/style.css" rel="stylesheet" type="text/css" />
+    <title>HFCoupons</title>
+</head>
+<body>
+<!-- wrapper -->
+<div>
+
+
+                <div id="byCam" class="convalida-cam">
+                    <video width="320px" height="230px" autoplay></video>
+                    <p id="camHeader"><b style='color: #000000;'>Allow Cam</b></p>
+                    <canvas style="display:none;"></canvas>
+                    <audio id="soundItem" controls="controls" height="0" width="0" style="display:none;">
+                        <source src="resources/sounds/beep.ogg" type="audio/ogg">
+                    </audio>
+                </div
+</div>
+<!-- // wrapper -->
+<!--Private libraries-->
+<script type="text/javascript" src="resources/js/jquery-1.7.1.min.js"></script>
+<script type="text/javascript" src="resources/js/jquery.qrcode.min.js"></script>
+<script type="text/javascript" src="resources/js/llqrcode.js"></script>
+<!--Fine -->
+
+<script type="text/javascript">
+    var video = document.querySelector('video');
+    var canvas = document.querySelector('canvas');
+    var ctx = canvas.getContext('2d');
+    var localMediaStream = null;
+    var refreshIntervalId=null;
+	
+	startcam();
+
+    function startcam(){
+        if(navigator.getUserMedia){
+            navigator.getUserMedia({video: true, audio: false}, function(stream) {
+                startStopInteval(true);
+                $("#camHeader").html("<b style='color: #000000;'>Get QR CODE</b>");
+                video = document.querySelector('video');
+                video.src = window.URL.createObjectURL(stream);
+                localMediaStream = stream;
+                //setInterval(showImage(),2000);
+            },onFailSoHard);
+        }else  if(navigator.webkitGetUserMedia){		
+            navigator.webkitGetUserMedia({video: true, audio: false}, function(stream) {
+                startStopInteval(true);
+				alert("im in");
+                $("#camHeader").html("<b style='color: #000000;'>Get QR CODE</b>");
+                video = document.querySelector('video');
+                video.src = window.URL.createObjectURL(stream);
+                localMediaStream = stream;
+            },onFailSoHard);
+        } else{
+            $("#camHeader").html("<b style='color: #000000;'>Browser not support this service</b>");
+        }
+    }
+
+
+
+    var onFailSoHard=function(e) {
+        if(e.code==1){
+            $("#camHeader").html("<b style='color: #000000;'>Webcam access not allowed</b>");
+        }else{
+            $("#camHeader").html("<b style='color: #000000;'>Browser not support this service</b>");
+        }
+    };
+
+    function startStopInteval(flag){
+        if(flag){
+            refreshIntervalId=setInterval(function(){
+                if (localMediaStream) {
+                    canvas.width=video.videoWidth;
+                    canvas.height=video.videoHeight;
+                    ctx.drawImage(video, 0, 0);
+                    decodificaQRCode(canvas.toDataURL('image/webp'));
+                }
+            },500);
+        }else{
+            clearInterval(refreshIntervalId);
+        }
+    }
+
+    $(document).ready( function() {
+        qrcode.callback = showInfo;
+    });
+
+    function decodificaQRCode(src) {
+        if(src)
+            qrcode.decode(src);
+    }
+
+    function showInfo(data) {
+        console.log(data);
+        if(data==undefined || data.indexOf("error")>-1){
+            console.log("error decodifica");
+        }else{
+            $("#camHeader").html("<b style='color: #000000;'>Dedode Done: "+data+"</b>" +
+                    "<a class='clickable' style='color:#c2c2c2;' onclick='restart();'>" +
+                    "<b>...Try again</b></a>");
+            soundItem.play();
+            startStopInteval(false);
+            convalida(data.trim());
+            video.pause();
+            //localMediaStream.stop();
+        }
+    }
+
+    function restart(){
+        video.play();
+        startStopInteval(true);
+        // localMediaStream.start();
+    }
+</script>
+</body>
+</html>
